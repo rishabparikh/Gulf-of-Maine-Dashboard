@@ -438,8 +438,8 @@ def load_spatial_data():
             'hotspot_2_name': 'Gulf of St. Lawrence (Shifting)',
             'hotspot_2_lat': 47.0, 'hotspot_2_lon': -62.0,
             'shift_km': 250, 'shift_direction': 'NE',
-            'map_notes': 'This lipid-rich copepod — the energy backbone of the Gulf of Maine '
-                         'food web — has declined ~70% in abundance. Peak concentrations have '
+            'map_notes': 'This lipid-rich copepod, the energy backbone of the Gulf of Maine '
+                         'food web, has declined ~70% in abundance. Peak concentrations have '
                          'shifted from Wilkinson Basin toward the Scotian Shelf and Gulf of '
                          'St. Lawrence. North Atlantic right whales have followed this prey '
                          'shift, moving into less-protected Canadian waters.'
@@ -528,6 +528,187 @@ def load_ecosystem_data():
 
 
 # ============================================
+# DATA: FOOD WEB NETWORK
+# ============================================
+@st.cache_data
+def load_foodweb_data():
+    """
+    Trophic network structure for the Gulf of Maine marine food web.
+    Nodes represent species or functional groups at defined trophic levels.
+    Edges represent predator-prey or energy transfer relationships.
+    Compiled from published diet studies, NOAA food habits database,
+    and ecosystem modeling literature.
+    """
+    nodes = [
+        # Trophic Level 1: Primary Producers
+        {'id': 'phyto', 'label': 'Phytoplankton', 'trophic_level': 1,
+         'category': 'Primary Producer', 'trend': 'Variable',
+         'status_color': '#8DB580',
+         'notes': 'Diatoms and dinoflagellates forming the base of the food web. '
+                  'Spring bloom timing has shifted 2-3 weeks earlier in the Gulf of Maine, '
+                  'creating potential mismatches with zooplankton grazers.'},
+
+        # Trophic Level 2: Zooplankton
+        {'id': 'calanus', 'label': 'Calanus finmarchicus', 'trophic_level': 2,
+         'category': 'Zooplankton (Cold-water)', 'trend': 'Declining',
+         'status_color': '#457B9D',
+         'notes': 'Lipid-rich copepod historically dominating Gulf of Maine zooplankton biomass. '
+                  'Declined ~70% as warming favors smaller warm-water copepods. Keystone prey '
+                  'for herring, sand lance, and right whales.'},
+        {'id': 'centropages', 'label': 'Centropages typicus', 'trophic_level': 2,
+         'category': 'Zooplankton (Warm-water)', 'trend': 'Expanding',
+         'status_color': '#E63946',
+         'notes': 'Smaller, less lipid-dense copepod increasing in abundance as waters warm. '
+                  'Provides significantly less energy per individual than Calanus, forcing '
+                  'predators to expend more effort for the same caloric intake.'},
+        {'id': 'krill', 'label': 'Krill (Euphausiacea)', 'trophic_level': 2,
+         'category': 'Zooplankton', 'trend': 'Variable',
+         'status_color': '#D4A373',
+         'notes': 'Important prey for baleen whales and forage fish. Abundance varies '
+                  'interannually but shows a long-term declining trend in southern Gulf of Maine.'},
+
+        # Trophic Level 3: Forage Species
+        {'id': 'herring', 'label': 'Atlantic Herring', 'trophic_level': 3,
+         'category': 'Forage Fish (Cold-water)', 'trend': 'Declining',
+         'status_color': '#457B9D',
+         'notes': 'Critical forage species linking zooplankton to upper trophic levels. '
+                  'Biomass declined 55% as Calanus prey base eroded. Supports seabirds, '
+                  'marine mammals, tuna, and cod.'},
+        {'id': 'sandlance', 'label': 'Sand Lance', 'trophic_level': 3,
+         'category': 'Forage Fish (Cold-water)', 'trend': 'Declining',
+         'status_color': '#457B9D',
+         'notes': 'Small burrowing fish critical for seabird breeding success. Particularly '
+                  'important for Atlantic puffin chick survival on nesting islands. Declining '
+                  'in southern portions of range.'},
+        {'id': 'squid', 'label': 'Longfin Squid', 'trophic_level': 3,
+         'category': 'Forage/Prey (Warm-water)', 'trend': 'Expanding',
+         'status_color': '#E63946',
+         'notes': 'Expanding northward into Gulf of Maine. Serves dual trophic role as both '
+                  'predator (of small fish, zooplankton) and prey (for tuna, cod, marine mammals). '
+                  'Partially replacing herring as a forage base.'},
+        {'id': 'shrimp', 'label': 'Northern Shrimp', 'trophic_level': 3,
+         'category': 'Invertebrate (Cold-water)', 'trend': 'Collapsed',
+         'status_color': '#1D3557',
+         'notes': 'Population collapsed; fishery closed since 2013. Was an important prey '
+                  'item for cod and other groundfish. Its loss removes a trophic link between '
+                  'benthic production and demersal predators.'},
+
+        # Trophic Level 4: Mid-level Predators
+        {'id': 'cod', 'label': 'Atlantic Cod', 'trophic_level': 4,
+         'category': 'Groundfish (Cold-water)', 'trend': 'Declining',
+         'status_color': '#457B9D',
+         'notes': 'Historically the apex demersal predator in the Gulf of Maine. Declining '
+                  '78% due to warming and reduced prey (shrimp, herring, sand lance). '
+                  'Loss of cod releases predation pressure on crabs and lobster.'},
+        {'id': 'mackerel', 'label': 'Atlantic Mackerel', 'trophic_level': 4,
+         'category': 'Pelagic Fish (Cool-water)', 'trend': 'Shifting North',
+         'status_color': '#D4A373',
+         'notes': 'Shifting northward at 55 km/decade. Important prey for tuna and marine mammals, '
+                  'and a significant predator of zooplankton and small fish.'},
+        {'id': 'lobster', 'label': 'American Lobster', 'trophic_level': 3.5,
+         'category': 'Invertebrate (Cool-water)', 'trend': 'Mixed',
+         'status_color': '#D4A373',
+         'notes': 'Omnivorous benthic feeder consuming crabs, mussels, sea urchins, and algae. '
+                  'Booming in Maine, collapsing in Southern New England. Benefited from reduced '
+                  'cod predation pressure on juveniles.'},
+        {'id': 'bsb', 'label': 'Black Sea Bass', 'trophic_level': 4,
+         'category': 'Reef Fish (Warm-water)', 'trend': 'Expanding',
+         'status_color': '#E63946',
+         'notes': 'Expanding northward at 75 km/decade. Feeds on crabs, shrimp, and small fish. '
+                  'Now competing with native species for habitat and prey in areas where it was '
+                  'previously absent.'},
+        {'id': 'flounder', 'label': 'Summer Flounder', 'trophic_level': 4,
+         'category': 'Flatfish (Warm-water)', 'trend': 'Expanding',
+         'status_color': '#E63946',
+         'notes': 'Expanding into Gulf of Maine from the Mid-Atlantic. Feeds on small fish, '
+                  'squid, and crustaceans. Potential competition with winter flounder and '
+                  'other native flatfish for benthic habitat.'},
+
+        # Trophic Level 5: Top Predators
+        {'id': 'tuna', 'label': 'Bluefin Tuna', 'trophic_level': 5,
+         'category': 'Apex Predator (Warm-water)', 'trend': 'Expanding',
+         'status_color': '#E63946',
+         'notes': 'Following forage fish (herring, mackerel, sand lance) northward into Maine '
+                  'and Canadian waters. Apex pelagic predator with increasing presence in the '
+                  'Gulf of Maine.'},
+        {'id': 'right_whale', 'label': 'North Atlantic Right Whale', 'trophic_level': 4.5,
+         'category': 'Marine Mammal (Endangered)', 'trend': 'Declining',
+         'status_color': '#1D3557',
+         'notes': 'Critically endangered (<360 individuals). Obligate Calanus predator that has '
+                  'shifted foraging from Gulf of Maine to the Gulf of St. Lawrence, following '
+                  'northward-moving copepod prey into waters with less ship-strike protection.'},
+        {'id': 'seals', 'label': 'Gray / Harbor Seals', 'trophic_level': 5,
+         'category': 'Marine Mammal', 'trend': 'Stable/Increasing',
+         'status_color': '#8DB580',
+         'notes': 'Seal populations have recovered significantly under Marine Mammal Protection Act. '
+                  'Feed on herring, sand lance, squid, and various groundfish. Their recovery adds '
+                  'predation pressure on already-stressed forage fish populations.'},
+        {'id': 'puffin', 'label': 'Atlantic Puffin', 'trophic_level': 4.5,
+         'category': 'Seabird', 'trend': 'Declining',
+         'status_color': '#457B9D',
+         'notes': 'Gulf of Maine puffin colonies depend on herring and sand lance to feed chicks. '
+                  'As these cold-water forage fish decline, puffins have been observed bringing '
+                  'butterfish (a warm-water species) to chicks, which are too large for chicks '
+                  'to swallow, reducing breeding success.'},
+        {'id': 'humpback', 'label': 'Humpback Whale', 'trophic_level': 4.5,
+         'category': 'Marine Mammal', 'trend': 'Variable',
+         'status_color': '#D4A373',
+         'notes': 'Generalist baleen whale feeding on herring, sand lance, krill, and other '
+                  'small schooling fish. More dietary flexibility than right whales, but still '
+                  'affected by declining forage fish abundance.'},
+    ]
+
+    # Directed edges: source (prey) -> target (predator)
+    edges = [
+        # Phytoplankton feeds zooplankton
+        {'source': 'phyto', 'target': 'calanus', 'strength': 'strong'},
+        {'source': 'phyto', 'target': 'centropages', 'strength': 'strong'},
+        {'source': 'phyto', 'target': 'krill', 'strength': 'strong'},
+
+        # Zooplankton feeds forage species
+        {'source': 'calanus', 'target': 'herring', 'strength': 'strong'},
+        {'source': 'calanus', 'target': 'sandlance', 'strength': 'strong'},
+        {'source': 'calanus', 'target': 'right_whale', 'strength': 'critical'},
+        {'source': 'calanus', 'target': 'mackerel', 'strength': 'moderate'},
+        {'source': 'centropages', 'target': 'herring', 'strength': 'moderate'},
+        {'source': 'centropages', 'target': 'sandlance', 'strength': 'weak'},
+        {'source': 'krill', 'target': 'herring', 'strength': 'moderate'},
+        {'source': 'krill', 'target': 'humpback', 'strength': 'strong'},
+        {'source': 'krill', 'target': 'right_whale', 'strength': 'moderate'},
+
+        # Forage species feed mid-level and top predators
+        {'source': 'herring', 'target': 'cod', 'strength': 'strong'},
+        {'source': 'herring', 'target': 'tuna', 'strength': 'strong'},
+        {'source': 'herring', 'target': 'humpback', 'strength': 'strong'},
+        {'source': 'herring', 'target': 'puffin', 'strength': 'critical'},
+        {'source': 'herring', 'target': 'seals', 'strength': 'strong'},
+        {'source': 'sandlance', 'target': 'puffin', 'strength': 'critical'},
+        {'source': 'sandlance', 'target': 'cod', 'strength': 'moderate'},
+        {'source': 'sandlance', 'target': 'tuna', 'strength': 'moderate'},
+        {'source': 'sandlance', 'target': 'humpback', 'strength': 'moderate'},
+        {'source': 'sandlance', 'target': 'seals', 'strength': 'moderate'},
+        {'source': 'squid', 'target': 'tuna', 'strength': 'strong'},
+        {'source': 'squid', 'target': 'cod', 'strength': 'moderate'},
+        {'source': 'squid', 'target': 'seals', 'strength': 'moderate'},
+        {'source': 'squid', 'target': 'bsb', 'strength': 'moderate'},
+        {'source': 'shrimp', 'target': 'cod', 'strength': 'strong'},
+        {'source': 'shrimp', 'target': 'flounder', 'strength': 'moderate'},
+
+        # Benthic connections
+        {'source': 'lobster', 'target': 'cod', 'strength': 'moderate'},
+        {'source': 'lobster', 'target': 'seals', 'strength': 'weak'},
+
+        # Mid-level predators feed top predators
+        {'source': 'mackerel', 'target': 'tuna', 'strength': 'strong'},
+        {'source': 'mackerel', 'target': 'seals', 'strength': 'moderate'},
+        {'source': 'mackerel', 'target': 'humpback', 'strength': 'moderate'},
+        {'source': 'cod', 'target': 'seals', 'strength': 'moderate'},
+    ]
+
+    return nodes, edges
+
+
+# ============================================
 # LOAD ALL DATA
 # ============================================
 df_sst = load_sst_data()
@@ -535,6 +716,7 @@ df_species = load_species_data()
 df_spatial = load_spatial_data()
 df_lobster = load_lobster_data()
 df_ecosystem = load_ecosystem_data()
+fw_nodes, fw_edges = load_foodweb_data()
 
 
 # ============================================
@@ -673,12 +855,13 @@ st.markdown("---")
 # ============================================
 # TAB LAYOUT
 # ============================================
-tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
+tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
     "Temperature Trends",
     "Species Redistribution",
     "Interactive Range Map",
     "Lobster Case Study",
     "Ecosystem Indicators",
+    "Food Web",
     "Data & Methods"
 ])
 
@@ -692,7 +875,7 @@ with tab1:
     <p class="section-description">
     The Gulf of Maine's warming trajectory is among the most dramatic of any marine ecosystem
     globally. While the global ocean has warmed at approximately 0.1C per decade since 1982,
-    the Gulf of Maine has warmed at roughly 0.5C per decade — a rate that accelerated sharply
+    the Gulf of Maine has warmed at roughly 0.5C per decade, a rate that accelerated sharply
     after the 2012 marine heatwave event. The following visualizations present annual mean
     sea surface temperature and anomalies relative to the NOAA standard 1901-2000 baseline.
     </p>
@@ -833,7 +1016,7 @@ with tab1:
         The 2012 marine heatwave represents an inflection point in Gulf of Maine thermal dynamics.
         Prior to 2012, the mean temperature anomaly was <strong>{pre_2012_anomaly:.2f}{unit}</strong>
         relative to the 1901-2000 baseline. Since 2015, the mean anomaly has been
-        <strong>+{recent_anomaly:.1f}{unit}</strong> — indicating that conditions once considered
+        <strong>+{recent_anomaly:.1f}{unit}</strong>, indicating that conditions once considered
         anomalous are now the norm.<br><br>
         This persistent warming has exceeded the adaptive capacity of several cold-water species
         and triggered large-scale community restructuring across the ecosystem.
@@ -1075,7 +1258,7 @@ with tab2:
     st.markdown(f"""
     <div class="insight-box">
     <strong>{species_info['species']}</strong> (<em>{species_info['scientific_name']}</em>)
-    — {species_info['taxa_group']}
+    | {species_info['taxa_group']}
     | Thermal Range: {species_info['temp_min_c']}-{species_info['temp_max_c']}C
     | Optimal: {species_info['optimal_temp_c']}C
     | Economic Importance: {species_info['economic_importance']}
@@ -1178,7 +1361,7 @@ with tab3:
                 marker=dict(size=12, color=color, opacity=0.4, symbol='circle'),
                 name=f"{row['species']} (Historical)",
                 hovertemplate=(
-                    f"<b>{row['species']}</b> — Historical Centroid<br>"
+                    f"<b>{row['species']}</b> | Historical Centroid<br>"
                     f"Lat: {row['hist_centroid_lat']:.1f}N, Lon: {row['hist_centroid_lon']:.1f}W<br>"
                     f"Period: 1980s-1990s<br>"
                     f"<extra></extra>"
@@ -1197,7 +1380,7 @@ with tab3:
                 textfont=dict(size=9, color=color),
                 name=f"{row['species']} (Current)",
                 hovertemplate=(
-                    f"<b>{row['species']}</b> — Current Centroid<br>"
+                    f"<b>{row['species']}</b> | Current Centroid<br>"
                     f"<em>{row['scientific_name']}</em><br>"
                     f"Lat: {row['curr_centroid_lat']:.1f}N, Lon: {row['curr_centroid_lon']:.1f}W<br>"
                     f"Shift: {row['shift_km']} km {row['shift_direction']}<br>"
@@ -1267,7 +1450,7 @@ with tab3:
                 lon=[row['hotspot_1_lon']],
                 mode='markers',
                 marker=dict(size=14, color=color, opacity=0.35, symbol='circle'),
-                name=f"{row['species']} — Historical",
+                name=f"{row['species']} | Historical",
                 hovertemplate=(
                     f"<b>{row['species']}</b><br>"
                     f"<em>{row['hotspot_1_name']}</em><br>"
@@ -1286,7 +1469,7 @@ with tab3:
                 text=[row['species'].split('(')[0].strip()[:10]],
                 textposition='top center',
                 textfont=dict(size=9, color=color),
-                name=f"{row['species']} — Current",
+                name=f"{row['species']} | Current",
                 hovertemplate=(
                     f"<b>{row['species']}</b><br>"
                     f"<em>{row['hotspot_2_name']}</em><br>"
@@ -1361,7 +1544,7 @@ with tab3:
                 opacity=0.3,
                 name=f"{row['species']} (Historical)",
                 hovertemplate=(
-                    f"<b>{row['species']}</b> — Historical Range<br>"
+                    f"<b>{row['species']}</b> | Historical Range<br>"
                     f"{row['hist_south']}N to {row['hist_north']}N<br>"
                     f"<extra></extra>"
                 ),
@@ -1378,7 +1561,7 @@ with tab3:
                 opacity=0.85,
                 name=f"{row['species']} (Current)",
                 hovertemplate=(
-                    f"<b>{row['species']}</b> — Current Range<br>"
+                    f"<b>{row['species']}</b> | Current Range<br>"
                     f"{row['curr_south']}N to {row['curr_north']}N<br>"
                     f"Trend: {row['trend']}<br>"
                     f"<extra></extra>"
@@ -1435,9 +1618,9 @@ with tab3:
         <strong>{sp['species']}</strong> (<em>{sp['scientific_name']}</em>)
         | Thermal Affinity: {sp['thermal_affinity']} | Trend: {sp['trend']}<br><br>
         <strong>Historical Range:</strong> {sp['hist_range_south']}N to {sp['hist_range_north']}N
-        (Centroid: {sp['hist_centroid_lat']}N) — Key area: {sp['hotspot_1_name']}<br><br>
+        (Centroid: {sp['hist_centroid_lat']}N)  | Key area: {sp['hotspot_1_name']}<br><br>
         <strong>Current Range:</strong> {sp['curr_range_south']}N to {sp['curr_range_north']}N
-        (Centroid: {sp['curr_centroid_lat']}N) — Key area: {sp['hotspot_2_name']}<br><br>
+        (Centroid: {sp['curr_centroid_lat']}N)  | Key area: {sp['hotspot_2_name']}<br><br>
         {sp['map_notes']}
         </div>
         """, unsafe_allow_html=True)
@@ -1458,7 +1641,7 @@ with tab4:
     divergence, now well-documented in the scientific literature, serves as both a warning about
     the nonlinear nature of climate impacts and a preview of what Maine may face under
     continued warming. The estimated thermal stress threshold for lobster is approximately
-    20C in bottom water temperature — a threshold that Southern New England waters now
+    20C in bottom water temperature, a threshold that Southern New England waters now
     routinely exceed during summer months.
     </p>
     """, unsafe_allow_html=True)
@@ -1514,11 +1697,11 @@ with tab4:
         st.markdown(f"""
         <div class="insight-box">
         <strong>Maine: Boom Approaching a Ceiling</strong><br><br>
-        Landings surged from 28 million lbs in 1990 to a peak of 132 million lbs in 2016 — a
+        Landings surged from 28 million lbs in 1990 to a peak of 132 million lbs in 2016, a
         371% increase driven by improved juvenile survival in warmer waters. However, since 2016
         landings have declined {abs(maine_decline_from_peak):.0f}% from peak. Rising bottom water
-        temperatures are compressing the optimal thermal window, and shell disease — previously
-        absent in Maine waters — has been detected with increasing frequency north of Cape Cod.
+        temperatures are compressing the optimal thermal window, and shell disease, previously
+        absent in Maine waters, has been detected with increasing frequency north of Cape Cod.
         The Maine lobster industry, valued at over $500M annually, faces significant economic
         exposure to continued warming.
         </div>
@@ -1553,11 +1736,11 @@ with tab4:
         st.markdown("""
         <div class="insight-box">
         <strong>Southern New England: A Collapse Driven by Warming</strong><br><br>
-        Landings fell from 22 million lbs (1990) to 1.5 million lbs (2023) — a 93% decline.
+        Landings fell from 22 million lbs (1990) to 1.5 million lbs (2023), a 93% decline.
         Bottom water temperatures in Long Island Sound and Narragansett Bay now regularly exceed
         20C during summer, surpassing the lobster thermal stress threshold. Epizootic shell
         disease prevalence, which is strongly temperature-dependent, reached over 30% of sampled
-        lobsters in some years. The collapse was not primarily driven by overfishing — it was
+        lobsters in some years. The collapse was not primarily driven by overfishing; it was
         driven by habitat loss due to warming. This region now serves as a reference case for
         projecting future impacts in the Gulf of Maine.
         </div>
@@ -1653,8 +1836,8 @@ with tab4:
         supports an estimated 4,500 licensed harvesters and generates substantial economic
         activity across supply chains, tourism, and coastal communities.<br><br>
         The concentration of economic value in a single climate-sensitive species creates
-        significant vulnerability. Diversification strategies — including expansion into Jonah
-        crab, aquaculture, and emerging warm-water species — are under active exploration
+        significant vulnerability. Diversification strategies, including expansion into Jonah
+        crab, aquaculture, and emerging warm-water species, are under active exploration
         throughout the region.
         </div>
         """, unsafe_allow_html=True)
@@ -1798,14 +1981,14 @@ with tab5:
     st.markdown("""
     <div class="insight-box">
     <strong>Ecosystem Restructuring: Interconnected Impacts</strong><br><br>
-    The decline of <em>Calanus finmarchicus</em> — the lipid-rich copepod that historically
-    dominated Gulf of Maine zooplankton — represents a foundational shift in the food web.
+    The decline of <em>Calanus finmarchicus</em>, the lipid-rich copepod that historically
+    dominated Gulf of Maine zooplankton, represents a foundational shift in the food web.
     <em>Calanus</em> is being replaced by smaller, less energy-dense copepod species
     (e.g., <em>Centropages typicus</em>) that favor warmer conditions. This shift propagates
     upward through the food web: Atlantic herring and sand lance, which depend on
     <em>Calanus</em>, have declined, reducing prey availability for seabirds (Atlantic puffins),
     marine mammals, and predatory fish.<br><br>
-    The North Atlantic right whale — with fewer than 360 individuals remaining — has shifted
+    The North Atlantic right whale, with fewer than 360 individuals remaining, has shifted
     its foraging distribution out of the Gulf of Maine and into the Gulf of St. Lawrence,
     following the northward movement of its copepod prey. This redistribution has moved whales
     into areas with less regulatory protection and higher ship strike risk, compounding
@@ -1818,9 +2001,402 @@ with tab5:
 
 
 # ============================================
-# TAB 6: DATA & METHODS
+# TAB 6: FOOD WEB
 # ============================================
 with tab6:
+    st.markdown("## Gulf of Maine Trophic Network")
+    st.markdown("""
+    <p class="section-description">
+    Climate-driven species redistribution does not occur in isolation. Changes at any trophic
+    level cascade through the food web, amplifying or buffering impacts on connected species.
+    The interactive network below maps the major energy transfer pathways in the Gulf of Maine
+    ecosystem and illustrates how warming is restructuring these connections. Select any species
+    to highlight its trophic relationships and understand how its decline, expansion, or shift
+    propagates through the system.
+    </p>
+    """, unsafe_allow_html=True)
+
+    # Build node lookup
+    node_lookup = {n['id']: n for n in fw_nodes}
+
+    # Controls
+    col_fw1, col_fw2 = st.columns([1, 2])
+
+    with col_fw1:
+        fw_highlight = st.selectbox(
+            "Highlight a Species / Group",
+            options=['All Connections'] + [n['label'] for n in fw_nodes],
+            index=0,
+            key='fw_species_select'
+        )
+
+        fw_color_mode = st.radio(
+            "Color By",
+            ["Population Trend", "Thermal Affinity", "Trophic Level"],
+            key='fw_color_mode'
+        )
+
+    # Determine which node is highlighted
+    highlight_id = None
+    if fw_highlight != 'All Connections':
+        for n in fw_nodes:
+            if n['label'] == fw_highlight:
+                highlight_id = n['id']
+                break
+
+    # Get connected edges and nodes for highlighting
+    connected_edges = []
+    connected_node_ids = set()
+    if highlight_id:
+        for e in fw_edges:
+            if e['source'] == highlight_id or e['target'] == highlight_id:
+                connected_edges.append(e)
+                connected_node_ids.add(e['source'])
+                connected_node_ids.add(e['target'])
+        connected_node_ids.add(highlight_id)
+
+    # Position nodes by trophic level (y) with horizontal spread (x)
+    # Manual x positioning to avoid overlap
+    node_positions = {
+        'phyto': (0.5, 0),
+        'calanus': (0.2, 1), 'centropages': (0.5, 1), 'krill': (0.8, 1),
+        'herring': (0.1, 2), 'sandlance': (0.3, 2), 'squid': (0.55, 2),
+        'shrimp': (0.75, 2), 'lobster': (0.92, 2),
+        'cod': (0.08, 3), 'mackerel': (0.28, 3), 'bsb': (0.48, 3),
+        'flounder': (0.68, 3), 'puffin': (0.85, 3),
+        'tuna': (0.12, 4), 'right_whale': (0.35, 4), 'humpback': (0.58, 4),
+        'seals': (0.8, 4),
+    }
+
+    # Color logic
+    def get_node_color(node, mode):
+        if mode == "Population Trend":
+            return node['status_color']
+        elif mode == "Thermal Affinity":
+            cat = node.get('category', '')
+            if 'Cold-water' in cat:
+                return '#457B9D'
+            elif 'Warm-water' in cat:
+                return '#E63946'
+            elif 'Cool-water' in cat:
+                return '#D4A373'
+            else:
+                return '#8DB580'
+        else:  # Trophic Level
+            tl = node['trophic_level']
+            tl_colors = {1: '#8DB580', 2: '#A8D5BA', 3: '#D4A373',
+                         3.5: '#C4956A', 4: '#E07A5F', 4.5: '#C0392B', 5: '#922B21'}
+            return tl_colors.get(tl, '#999')
+
+    # Build the network figure
+    fig_fw = go.Figure()
+
+    # Trophic level background bands
+    tl_labels = ['Primary Producers', 'Zooplankton', 'Forage Species',
+                 'Mid-Level Predators', 'Top Predators']
+    for i, label in enumerate(tl_labels):
+        fig_fw.add_shape(
+            type="rect",
+            x0=-0.05, x1=1.05,
+            y0=i - 0.35, y1=i + 0.35,
+            fillcolor=['rgba(141,181,128,0.08)', 'rgba(168,213,186,0.08)',
+                       'rgba(212,163,115,0.08)', 'rgba(224,122,95,0.08)',
+                       'rgba(146,43,33,0.08)'][i],
+            line=dict(width=0),
+            layer='below'
+        )
+        fig_fw.add_annotation(
+            x=-0.08, y=i,
+            text=f"<b>{label}</b>",
+            showarrow=False,
+            font=dict(size=10, color='#4A6274'),
+            textangle=-90,
+            xanchor='right'
+        )
+
+    # Draw edges
+    strength_width = {'critical': 4, 'strong': 2.5, 'moderate': 1.5, 'weak': 0.8}
+
+    for e in fw_edges:
+        src_pos = node_positions.get(e['source'])
+        tgt_pos = node_positions.get(e['target'])
+        if not src_pos or not tgt_pos:
+            continue
+
+        # Determine edge visibility
+        if highlight_id:
+            if e in connected_edges:
+                edge_opacity = 0.7
+                edge_width = strength_width.get(e['strength'], 1.5) * 1.3
+            else:
+                edge_opacity = 0.06
+                edge_width = 0.5
+        else:
+            edge_opacity = 0.25
+            edge_width = strength_width.get(e['strength'], 1.5)
+
+        # Edge color based on source node trend
+        src_node = node_lookup[e['source']]
+        edge_color = src_node['status_color']
+
+        # Slight curve using a bezier midpoint
+        mid_x = (src_pos[0] + tgt_pos[0]) / 2 + np.random.uniform(-0.02, 0.02)
+        mid_y = (src_pos[1] + tgt_pos[1]) / 2
+
+        fig_fw.add_trace(go.Scatter(
+            x=[src_pos[0], mid_x, tgt_pos[0]],
+            y=[src_pos[1], mid_y, tgt_pos[1]],
+            mode='lines',
+            line=dict(
+                color=edge_color,
+                width=edge_width,
+            ),
+            opacity=edge_opacity,
+            hoverinfo='skip',
+            showlegend=False
+        ))
+
+    # Draw nodes
+    for n in fw_nodes:
+        pos = node_positions.get(n['id'])
+        if not pos:
+            continue
+
+        color = get_node_color(n, fw_color_mode)
+
+        # Determine node visibility
+        if highlight_id:
+            if n['id'] in connected_node_ids:
+                opacity = 1.0
+                size = 28 if n['id'] == highlight_id else 22
+                border_width = 3 if n['id'] == highlight_id else 1
+            else:
+                opacity = 0.15
+                size = 16
+                border_width = 0
+        else:
+            opacity = 0.9
+            size = 22
+            border_width = 1
+
+        # Trend indicator symbol
+        trend_markers = {
+            'Declining': 'triangle-down', 'Collapsed': 'x',
+            'Expanding': 'triangle-up', 'Shifting North': 'arrow-up',
+            'Variable': 'diamond', 'Stable/Increasing': 'circle',
+            'Mixed': 'square', 'Plateauing': 'diamond'
+        }
+        symbol = trend_markers.get(n['trend'], 'circle')
+
+        fig_fw.add_trace(go.Scatter(
+            x=[pos[0]],
+            y=[pos[1]],
+            mode='markers+text',
+            marker=dict(
+                size=size,
+                color=color,
+                opacity=opacity,
+                symbol=symbol,
+                line=dict(width=border_width, color='#1D3557')
+            ),
+            text=[n['label']],
+            textposition='top center',
+            textfont=dict(size=9, color='#1D3557' if opacity > 0.5 else '#CCC'),
+            hovertemplate=(
+                f"<b>{n['label']}</b><br>"
+                f"Category: {n['category']}<br>"
+                f"Trophic Level: {n['trophic_level']}<br>"
+                f"Trend: {n['trend']}<br>"
+                f"---<br>"
+                f"{n['notes'][:250]}<br>"
+                f"<extra></extra>"
+            ),
+            showlegend=False
+        ))
+
+    fig_fw.update_layout(
+        height=720,
+        template='plotly_white',
+        xaxis=dict(
+            showgrid=False, zeroline=False, showticklabels=False,
+            range=[-0.15, 1.1]
+        ),
+        yaxis=dict(
+            showgrid=False, zeroline=False, showticklabels=False,
+            range=[-0.6, 4.7],
+            scaleanchor='x', scaleratio=0.6
+        ),
+        margin=dict(l=80, r=20, t=40, b=20),
+        title=dict(
+            text="Trophic Network: Energy Flow from Primary Producers to Top Predators",
+            font=dict(size=14)
+        ),
+        plot_bgcolor='white'
+    )
+
+    st.plotly_chart(fig_fw, use_container_width=True)
+
+    # Legend for color mode
+    if fw_color_mode == "Population Trend":
+        legend_items = [
+            ('#E63946', 'Expanding / Warm-water increase'),
+            ('#D4A373', 'Variable / Mixed / Shifting'),
+            ('#457B9D', 'Declining'),
+            ('#1D3557', 'Collapsed'),
+            ('#8DB580', 'Stable or Variable baseline')
+        ]
+    elif fw_color_mode == "Thermal Affinity":
+        legend_items = [
+            ('#457B9D', 'Cold-water species'),
+            ('#D4A373', 'Cool-water species'),
+            ('#E63946', 'Warm-water species'),
+            ('#8DB580', 'Not thermally classified')
+        ]
+    else:
+        legend_items = [
+            ('#8DB580', 'Trophic Level 1: Primary Producers'),
+            ('#A8D5BA', 'Trophic Level 2: Zooplankton'),
+            ('#D4A373', 'Trophic Level 3: Forage Species'),
+            ('#E07A5F', 'Trophic Level 4: Mid-Level Predators'),
+            ('#922B21', 'Trophic Level 5: Top Predators')
+        ]
+
+    legend_html = '<div style="display: flex; flex-wrap: wrap; gap: 1rem; margin: 0.5rem 0;">'
+    for color, label in legend_items:
+        legend_html += (
+            f'<div style="display: flex; align-items: center; gap: 0.4rem;">'
+            f'<span style="display: inline-block; width: 14px; height: 14px; '
+            f'background-color: {color}; border-radius: 3px;"></span>'
+            f'<span style="font-size: 0.85rem; color: #4A6274;">{label}</span></div>'
+        )
+    legend_html += '</div>'
+    st.markdown(legend_html, unsafe_allow_html=True)
+
+    # Detail panel for selected species
+    if highlight_id:
+        st.markdown("---")
+        hl_node = node_lookup[highlight_id]
+
+        # Find prey (what it eats) and predators (what eats it)
+        prey_of = [node_lookup[e['source']]['label'] for e in connected_edges
+                    if e['target'] == highlight_id]
+        predators_of = [node_lookup[e['target']]['label'] for e in connected_edges
+                        if e['source'] == highlight_id]
+
+        col_d1, col_d2 = st.columns(2)
+
+        with col_d1:
+            st.markdown(f"#### {hl_node['label']}")
+            st.markdown(f"""
+            <div class="insight-box">
+            <strong>Category:</strong> {hl_node['category']}<br>
+            <strong>Trophic Level:</strong> {hl_node['trophic_level']}<br>
+            <strong>Population Trend:</strong> {hl_node['trend']}<br><br>
+            {hl_node['notes']}
+            </div>
+            """, unsafe_allow_html=True)
+
+        with col_d2:
+            st.markdown("#### Trophic Connections")
+
+            if prey_of:
+                st.markdown(f"**Prey / Energy Sources ({len(prey_of)}):**")
+                for p in prey_of:
+                    # Find edge strength
+                    strength = 'unknown'
+                    for e in connected_edges:
+                        if e['source'] == [n['id'] for n in fw_nodes if n['label'] == p][0] \
+                                and e['target'] == highlight_id:
+                            strength = e['strength']
+                            break
+                    strength_badge = {
+                        'critical': 'CRITICAL', 'strong': 'Strong',
+                        'moderate': 'Moderate', 'weak': 'Weak'
+                    }.get(strength, '')
+                    p_node = [n for n in fw_nodes if n['label'] == p][0]
+                    st.markdown(
+                        f"- **{p}** ({p_node['trend']}) "
+                        f"*[{strength_badge}]*"
+                    )
+            else:
+                st.markdown("*Primary producer / base of food web*")
+
+            if predators_of:
+                st.markdown(f"**Predators / Consumers ({len(predators_of)}):**")
+                for pr in predators_of:
+                    strength = 'unknown'
+                    for e in connected_edges:
+                        if e['target'] == [n['id'] for n in fw_nodes if n['label'] == pr][0] \
+                                and e['source'] == highlight_id:
+                            strength = e['strength']
+                            break
+                    strength_badge = {
+                        'critical': 'CRITICAL', 'strong': 'Strong',
+                        'moderate': 'Moderate', 'weak': 'Weak'
+                    }.get(strength, '')
+                    pr_node = [n for n in fw_nodes if n['label'] == pr][0]
+                    st.markdown(
+                        f"- **{pr}** ({pr_node['trend']}) "
+                        f"*[{strength_badge}]*"
+                    )
+
+    # Cascade narrative
+    st.markdown("---")
+    st.markdown("### Climate Cascade Pathways")
+    st.markdown("""
+    <p class="section-description">
+    Three primary cascade pathways are restructuring the Gulf of Maine food web:
+    </p>
+    """, unsafe_allow_html=True)
+
+    col_c1, col_c2, col_c3 = st.columns(3)
+
+    with col_c1:
+        st.markdown("""
+        <div class="insight-box">
+        <strong>The Copepod-to-Whale Cascade</strong><br><br>
+        Warming reduces <em>Calanus finmarchicus</em> abundance, which diminishes
+        the prey base for Atlantic herring and sand lance. Right whales, as obligate
+        <em>Calanus</em> feeders, have relocated from the Gulf of Maine to the Gulf of
+        St. Lawrence in search of adequate prey concentrations. This movement into
+        less-regulated waters has increased their exposure to vessel strikes and
+        fishing gear entanglement, compounding conservation risks for a species with
+        fewer than 360 remaining individuals.
+        </div>
+        """, unsafe_allow_html=True)
+
+    with col_c2:
+        st.markdown("""
+        <div class="insight-box">
+        <strong>The Forage Fish-to-Seabird Cascade</strong><br><br>
+        Declining herring and sand lance populations directly impact Atlantic puffin
+        breeding colonies on Maine's offshore islands. Puffin adults, unable to find
+        sufficient cold-water prey, have been documented bringing butterfish to their chicks.
+        Butterfish, a warm-water species expanding northward, are too large for chicks to
+        swallow, leading to reduced fledging success. This represents a tangible example
+        of how gradual temperature change translates into abrupt reproductive failure.
+        </div>
+        """, unsafe_allow_html=True)
+
+    with col_c3:
+        st.markdown("""
+        <div class="insight-box">
+        <strong>The Predator Release Cascade</strong><br><br>
+        The decline of Atlantic cod, historically the dominant groundfish predator in the
+        Gulf of Maine, has released predation pressure on lobster, crabs, and other
+        invertebrates. This "predator release" effect partially explains the Maine lobster
+        boom: with fewer cod consuming juvenile lobsters, survival rates increased at the
+        same time warming improved growth conditions. However, as the thermal window
+        continues to shift, this temporary benefit may reverse if lobster populations are
+        pushed past their own thermal tolerance.
+        </div>
+        """, unsafe_allow_html=True)
+
+
+# ============================================
+# TAB 7: DATA & METHODS
+# ============================================
+with tab7:
     st.markdown("## Data Sources and Methodology")
 
     st.markdown("""
@@ -1961,7 +2537,7 @@ st.markdown("---")
 st.markdown("""
 <div style='text-align: center; color: #4A6274; font-size: 0.9rem;'>
     <p>Gulf of Maine Climate Impact Dashboard | Developed for the New England Aquarium
-    — Anderson Cabot Center for Ocean Life</p>
+    - Anderson Cabot Center for Ocean Life</p>
     <p>Data Sources: NOAA ERSST v5, NOAA NEFSC, ASMFC, Gulf of Maine Research Institute
     | Built with Streamlit and Plotly</p>
     <p style='font-size: 0.8rem; color: #7A9AAA;'>Last Updated: February 2026 | For
